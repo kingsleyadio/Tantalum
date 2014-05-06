@@ -27,18 +27,17 @@
  */
 package org.tantalum.net;
 
-import java.io.UnsupportedEncodingException;
-import java.security.DigestException;
 import org.tantalum.CancellationException;
 import org.tantalum.PlatformUtils;
 import org.tantalum.Task;
 import org.tantalum.TimeoutException;
+import org.tantalum.security.CryptoException;
 import org.tantalum.storage.CacheView;
 import org.tantalum.storage.FlashCache;
 import org.tantalum.storage.FlashCache.StartupTask;
 import org.tantalum.storage.FlashDatabaseException;
 import org.tantalum.storage.StaticCache;
-import org.tantalum.util.CryptoUtils;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.util.L;
 import org.tantalum.util.LOR;
 import org.tantalum.util.RollingAverage;
@@ -175,8 +174,9 @@ public final class StaticWebCache extends StaticCache {
                     try {
                         final byte[] serverValue = (byte[]) in;
                         final byte[] localValue = flashCache.get(url);
-                        final long localDigest = CryptoUtils.getInstance().toDigest(localValue);
-                        final long serverDigest = CryptoUtils.getInstance().toDigest(serverValue);
+                        final CryptoUtils cryptoUtils = PlatformUtils.getInstance().getCryptoUtils();
+                        final long localDigest = cryptoUtils.toDigest(localValue);
+                        final long serverDigest = cryptoUtils.toDigest(serverValue);
 
                         if (localDigest == serverDigest) {
                             L.i(this, url, "Server and cache give same values");
@@ -185,9 +185,7 @@ public final class StaticWebCache extends StaticCache {
                         }
                     } catch (FlashDatabaseException ex) {
                         L.e(this, "Can not validate", url, ex);
-                    } catch (DigestException ex) {
-                        L.e(this, "Can not validate", url, ex);
-                    } catch (UnsupportedEncodingException ex) {
+                    } catch (CryptoException ex) {
                         L.e(this, "Can not validate", url, ex);
                     }
 

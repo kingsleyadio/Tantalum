@@ -28,13 +28,14 @@
 package org.tantalum.storage;
 
 import java.io.UnsupportedEncodingException;
-import java.security.DigestException;
 import java.util.Enumeration;
 import java.util.Vector;
 import org.tantalum.CancellationException;
+import org.tantalum.PlatformUtils;
 import org.tantalum.Task;
 import org.tantalum.TimeoutException;
-import org.tantalum.util.CryptoUtils;
+import org.tantalum.security.CryptoException;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.util.L;
 import org.tantalum.util.StringUtils;
 
@@ -59,6 +60,8 @@ public abstract class FlashCache {
      *
      */
     protected final Vector shutdownTasks = new Vector();
+    
+    protected final CryptoUtils cryptoUtils;
 
     /**
      * The order in which object in the ramCache have been accessed since the
@@ -81,6 +84,7 @@ public abstract class FlashCache {
      */
     public FlashCache(final char priority) {
         this.priority = priority;
+        cryptoUtils = PlatformUtils.getInstance().getCryptoUtils();
     }
 
     public abstract void markLeastRecentlyUsed(final Long digest);
@@ -130,14 +134,14 @@ public abstract class FlashCache {
      * @throws DigestException
      * @throws FlashDatabaseException
      */
-    public final byte[] get(final String key) throws DigestException, FlashDatabaseException {
+    public final byte[] get(final String key) throws CryptoException, FlashDatabaseException {
         if (key == null) {
             throw new NullPointerException("You attempted to get a null digest from the cache");
         }
 
         final long digest;
         try {
-            digest = CryptoUtils.getInstance().toDigest(key);
+            digest = cryptoUtils.toDigest(key);
         } catch (UnsupportedEncodingException ex) {
             //#debug
             L.e(this, "get() can not decode", "key = " + key, ex);
@@ -145,7 +149,7 @@ public abstract class FlashCache {
         }
 
         //#debug
-        L.i(this, "get(" + key + ")", "digest=" + StringUtils.byteArrayToHexString(CryptoUtils.getInstance().longToBytes(digest)));
+        L.i(this, "get(" + key + ")", "digest=" + StringUtils.byteArrayToHexString(cryptoUtils.longToBytes(digest)));
 
         return get(digest, true);
     }
@@ -158,7 +162,7 @@ public abstract class FlashCache {
      * @throws DigestException
      * @throws FlashDatabaseException
      */
-    public abstract byte[] get(long digest, boolean markAsLeastRecentlyUsed) throws DigestException, FlashDatabaseException;
+    public abstract byte[] get(long digest, boolean markAsLeastRecentlyUsed) throws CryptoException, FlashDatabaseException;
 
     /**
      * Store the data object to persistent memory
@@ -169,7 +173,7 @@ public abstract class FlashCache {
      * @throws FlashFullException
      * @throws FlashDatabaseException
      */
-    public abstract void put(String key, byte[] bytes) throws DigestException, FlashFullException, FlashDatabaseException;
+    public abstract void put(String key, byte[] bytes) throws CryptoException, FlashFullException, FlashDatabaseException;
 
     /**
      * Remove the data object from persistent memory
@@ -178,12 +182,12 @@ public abstract class FlashCache {
      * @throws DigestException
      * @throws FlashDatabaseException
      */
-    public final void removeData(final String key) throws DigestException, FlashDatabaseException {
+    public final void removeData(final String key) throws CryptoException, FlashDatabaseException {
         if (key == null) {
             throw new NullPointerException("You attempted to remove a null string key from the cache");
         }
         try {
-            removeData(CryptoUtils.getInstance().toDigest(key));
+            removeData(cryptoUtils.toDigest(key));
         } catch (UnsupportedEncodingException ex) {
             //#debug
             L.e(this, "removeData() can not decode", "key = " + key, ex);
@@ -299,6 +303,6 @@ public abstract class FlashCache {
          *
          * @param key
          */
-        void execForEachKey(FlashCache flashCache, String key) throws DigestException, FlashDatabaseException;
+        void execForEachKey(FlashCache flashCache, String key) throws CryptoException, FlashDatabaseException;
     }
 }

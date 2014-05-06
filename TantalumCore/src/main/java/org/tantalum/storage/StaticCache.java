@@ -29,17 +29,16 @@ package org.tantalum.storage;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.ref.WeakReference;
-import java.security.DigestException;
 import java.util.Enumeration;
 import org.tantalum.CancellationException;
 import org.tantalum.PlatformUtils;
 import org.tantalum.Task;
 import org.tantalum.TimeoutException;
+import org.tantalum.security.CryptoException;
 import org.tantalum.util.Comparator;
-import org.tantalum.util.CryptoUtils;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.util.L;
 import org.tantalum.util.LOR;
-import org.tantalum.util.LRUVector;
 import org.tantalum.util.SortedVector;
 import org.tantalum.util.WeakHashCache;
 
@@ -78,6 +77,8 @@ public class StaticCache {
      * instead.
      */
     public final FlashCache flashCache;
+    
+    private final CryptoUtils cryptoUtils;
     /**
      * A heap memory ramCache in the form of a Hashtable from which data can be
      * removed automatically by the virtual machine to free up memory (automatic
@@ -190,6 +191,7 @@ public class StaticCache {
         }
         this.cachePriorityChar = priority;
         this.defaultCacheView = defaultCacheView;
+        cryptoUtils = PlatformUtils.getInstance().getCryptoUtils();
         flashCache = PlatformUtils.getInstance().getFlashCache(priority, cacheType, startupTask);
         try {
             init();
@@ -281,7 +283,7 @@ public class StaticCache {
      * @throws DigestException
      * @throws UnsupportedEncodingException
      */
-    private Object convertWithDefaultCacheViewAndPutToHeapCache(final String key, final LOR bytesReference) throws DigestException, UnsupportedEncodingException {
+    private Object convertWithDefaultCacheViewAndPutToHeapCache(final String key, final LOR bytesReference) throws CryptoException, UnsupportedEncodingException {
         //#mdebug
         {
             final byte[] bytes = bytesReference.getBytes();
@@ -291,7 +293,7 @@ public class StaticCache {
         //#enddebug
         final Object o = defaultCacheView.convertToUseForm(key, bytesReference);
 
-        final Long digest = new Long(CryptoUtils.getInstance().toDigest(key));
+        final Long digest = new Long(cryptoUtils.toDigest(key));
         flashCache.markLeastRecentlyUsed(digest);
         ramCache.put(digest, o);
         //#debug
@@ -309,7 +311,7 @@ public class StaticCache {
      */
     public Object synchronousRAMCacheGet(final String key) throws FlashDatabaseException {
         try {
-            final Long digest = new Long(CryptoUtils.getInstance().toDigest(key));
+            final Long digest = new Long(cryptoUtils.toDigest(key));
 
             final Object o = ramCache.get(digest);
 
@@ -452,7 +454,7 @@ public class StaticCache {
                 } else {
                     useForm = null;
                 }
-            } catch (DigestException e) {
+            } catch (CryptoException e) {
                 //#debug
                 L.e(this, "Can not synchronousGet", key, e);
                 throw new FlashDatabaseException("Can not synchronousGet: " + key + " - " + e);
@@ -526,7 +528,7 @@ public class StaticCache {
             L.i(this, "putAsync", "key=" + key + " byteLength=" + bytesReference.getBytes().length);
             try {
                 useForm = convertWithDefaultCacheViewAndPutToHeapCache(key, bytesReference);
-            } catch (DigestException ex) {
+            } catch (CryptoException ex) {
                 //#debug
                 L.e("Can not putAync", key, ex);
                 throw new FlashDatabaseException("Can not putAsync: " + key + " - " + ex);
@@ -614,14 +616,14 @@ public class StaticCache {
                 StaticCache.clearSpaceAllCaches(bytes.length);
                 flashCache.put(key, bytes);
             }
-        } catch (DigestException e) {
+        } catch (CryptoException e) {
             //#debug
             L.e("Couldn't store object to flash", key, e);
             throw new FlashDatabaseException("Could not store object to flash: " + key + " - " + e);
         }
     }
 
-    public static int clearSpaceAllCaches(final int minSpaceToClear) throws FlashDatabaseException, DigestException {
+    public static int clearSpaceAllCaches(final int minSpaceToClear) throws FlashDatabaseException, CryptoException {
         //#debug
         L.i("Clearing RMS space all caches", minSpaceToClear + " bytes");
 
@@ -654,7 +656,7 @@ public class StaticCache {
         flashCache.maintainDatabase();
     }
 
-    public int clearSpace(final int minSpaceToClear) throws FlashDatabaseException, DigestException {
+    public int clearSpace(final int minSpaceToClear) throws FlashDatabaseException, CryptoException {
         //#debug
         L.i(this, "Start clearing space, cache-" + this.cachePriorityChar, minSpaceToClear + " bytes still to clear");
 
@@ -772,8 +774,8 @@ public class StaticCache {
      * @throws UnsupportedEncodingException
      * @throws DigestException
      */
-    public boolean containsKey(final String key) throws UnsupportedEncodingException, DigestException {
-        final long digest = CryptoUtils.getInstance().toDigest(key);
+    public boolean containsKey(final String key) throws UnsupportedEncodingException, CryptoException {
+        final long digest = cryptoUtils.toDigest(key);
 
         return containsDigest(digest);
     }

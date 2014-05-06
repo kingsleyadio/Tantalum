@@ -14,10 +14,11 @@ import javax.microedition.rms.RecordStoreFullException;
 import javax.microedition.rms.RecordStoreNotOpenException;
 import org.tantalum.PlatformUtils;
 import org.tantalum.Task;
+import org.tantalum.security.CryptoException;
 import org.tantalum.storage.FlashCache;
 import org.tantalum.storage.FlashDatabaseException;
 import org.tantalum.storage.FlashFullException;
-import org.tantalum.util.CryptoUtils;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.util.L;
 import org.tantalum.util.LRUHashtable;
 
@@ -51,6 +52,7 @@ public final class RMSFastCache extends FlashCache {
     private final LRUHashtable indexHash = new LRUHashtable();
     private RecordStore keyRS;
     private RecordStore valueRS;
+    private final CryptoUtils cryptoUtils = PlatformUtils.getInstance().getCryptoUtils();
     private final Object mutex = new Object();
     private final org.tantalum.jme.RMSKeyUtils RMSKeyUtils = new org.tantalum.jme.RMSKeyUtils();
 
@@ -475,8 +477,8 @@ public final class RMSFastCache extends FlashCache {
             boolean error = false;
             try {
                 key = RMSKeyUtils.toStringKey(indexEntryBytes);
-                digest = CryptoUtils.getInstance().toDigest(key);
-            } catch (DigestException ex) {
+                digest = cryptoUtils.toDigest(key);
+            } catch (CryptoException ex) {
                 //#debug
                 L.e(this, "Problem decoding apparently valid index entry", keyRecordInteger.toString(), ex);
                 error = true;
@@ -576,7 +578,7 @@ public final class RMSFastCache extends FlashCache {
                     final Integer valueRecordIdAsInteger = new Integer(valueRecordId);
 
                     //#mdebug
-                    L.i(this, "initReadIndexRecords", "key(" + currentRecordTaskKeyIndex + ")=" + key + " (" + Long.toString(CryptoUtils.getInstance().toDigest(key), 16) + ") -> value(" + valueRecordId + ")");
+                    L.i(this, "initReadIndexRecords", "key(" + currentRecordTaskKeyIndex + ")=" + key + " (" + Long.toString(cryptoUtils.toDigest(key), 16) + ") -> value(" + valueRecordId + ")");
                     final String s = RMSKeyUtils.toStringKey(keyIndexBytes);
                     final Integer v = new Integer(RMSKeyUtils.toValueIndex(keyIndexBytes));
                     if (duplicateIndexStringHash.containsKey(s)) {
@@ -595,7 +597,7 @@ public final class RMSFastCache extends FlashCache {
                     if (startupTask != null) {
                         startupTask.execForEachKey(RMSFastCache.this, key);
                     }
-                } catch (final DigestException e) {
+                } catch (final CryptoException e) {
                     //#debug
                     L.e("Can not read index entry, deleting", "" + currentRecordTaskKeyIndex, e);
                     deleteCurrentKey();
@@ -737,7 +739,7 @@ public final class RMSFastCache extends FlashCache {
      * @throws FlashFullException
      * @throws FlashDatabaseException
      */
-    public void put(final String key, final byte[] value) throws DigestException, FlashFullException, FlashDatabaseException {
+    public void put(final String key, final byte[] value) throws CryptoException, FlashFullException, FlashDatabaseException {
         if (key == null) {
             throw new NullPointerException("You attempted to put a null key to the cache");
         }
@@ -747,7 +749,7 @@ public final class RMSFastCache extends FlashCache {
 
         synchronized (mutex) {
             try {
-                final long digest = CryptoUtils.getInstance().toDigest(key);
+                final long digest = cryptoUtils.toDigest(key);
                 final Long indexEntry = indexHashGet(digest, true);
                 final int valueRecordId;
                 final int keyRecordId;

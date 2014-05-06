@@ -33,8 +33,8 @@ import javax.microedition.rms.RecordStoreException;
 import javax.microedition.rms.RecordStoreFullException;
 import javax.microedition.rms.RecordStoreNotFoundException;
 import javax.microedition.rms.RecordStoreNotOpenException;
+import org.tantalum.PlatformUtils;
 import org.tantalum.storage.FlashDatabaseException;
-import org.tantalum.util.CryptoUtils;
 import org.tantalum.util.L;
 import org.tantalum.util.StringUtils;
 
@@ -168,7 +168,7 @@ public final class RMSUtils {
      * @param sb
      */
     private void appendDigestAsShortString(final byte[] digest, final StringBuffer sb) {
-        final long l = CryptoUtils.getInstance().bytesToLong(digest, 0);
+        final long l = PlatformUtils.getInstance().getCryptoUtils().bytesToLong(digest, 0);
         sb.append(Long.toString(l, RADIX));
     }
 

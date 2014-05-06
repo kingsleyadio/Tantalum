@@ -36,6 +36,7 @@ import java.util.Vector;
 import org.tantalum.storage.FlashCache;
 import org.tantalum.storage.FlashDatabaseException;
 import org.tantalum.storage.ImageCacheView;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.util.L;
 
 /**
@@ -415,6 +416,15 @@ public final class PlatformUtils {
      */
     public L getLog() {
         return platformAdapter.getLog();
+    }
+    
+    /**
+     * Get the CryptoUtils implementation appropriate for this platform.
+     * 
+     * @return 
+     */
+    public CryptoUtils getCryptoUtils() {
+      return platformAdapter.getCryptoUtils();
     }
 
     /**

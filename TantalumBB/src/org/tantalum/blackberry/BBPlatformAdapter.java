@@ -9,17 +9,19 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Hashtable;
 import java.util.Vector;
+
 import javax.microedition.io.HttpConnection;
+
 import net.rim.device.api.io.transport.ConnectionDescriptor;
 import net.rim.device.api.io.transport.ConnectionFactory;
 import net.rim.device.api.system.Alert;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.UiApplication;
+
 import org.tantalum.PlatformAdapter;
 import org.tantalum.PlatformUtils;
 import org.tantalum.PlatformUtils.HttpConn;
-import org.tantalum.jme.JMELog;
-import org.tantalum.jme.RMSFastCache;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.storage.FlashCache;
 import org.tantalum.storage.FlashCache.StartupTask;
 import org.tantalum.storage.FlashDatabaseException;
@@ -41,7 +43,7 @@ public final class BBPlatformAdapter implements PlatformAdapter {
     }
 
     public void init(int logMode) {
-        log = new JMELog(logMode);
+        log = new BBLog(logMode);
     }
 
     public void runOnUiThread(Runnable action) {
@@ -54,6 +56,10 @@ public final class BBPlatformAdapter implements PlatformAdapter {
 
     public L getLog() {
         return log;
+    }
+    
+    public CryptoUtils getCryptoUtils() {
+    	return BBCryptoUtils.getInstance();
     }
 
     public void vibrateAsync(int duration, Runnable timekeeperLambda) {
@@ -96,21 +102,7 @@ public final class BBPlatformAdapter implements PlatformAdapter {
     public FlashCache getFlashCache(char priority, int cacheType, StartupTask startupTask) throws FlashDatabaseException {
         switch (cacheType) {
             case PlatformUtils.PHONE_DATABASE_CACHE:
-                try {
-                    return new RMSFastCache(priority, startupTask);
-                } catch (Exception e) {
-                    //#debug
-                    L.e("Can not create flash cache, will attempt delete and re-init one time", "" + priority, e);
-                    RMSFastCache.deleteDataFiles(priority);
-                    try {
-                        final RMSFastCache cache = new RMSFastCache(priority, startupTask);
-                        //#debug
-                        L.i("After deleting the files giving and error, we successfully created flash cache", "" + priority);
-                        return cache;
-                    } catch (Exception e2) {
-                        throw new FlashDatabaseException("Can not create flash cache: " + e2);
-                    }
-                }
+            	return new BBCache(priority, startupTask);
 
             default:
                 throw new IllegalArgumentException("Unsupported cache type " + cacheType + ": only PlatformAdapter.PHONE_DATABASE_CACHE is supported at this time");
@@ -121,8 +113,9 @@ public final class BBPlatformAdapter implements PlatformAdapter {
         if (cacheType != PlatformUtils.PHONE_DATABASE_CACHE) {
             throw new UnsupportedOperationException("Not supported yet. Only PlatformUtils.PHONE_DATABASE_CACHE can be deleted (or created)");
         }
-
-        RMSFastCache.deleteDataFiles(priority);
+        
+        FlashCache cache = new BBCache(priority, null);
+        cache.clear();
     }
 
     public static final class BBHttpConn implements PlatformUtils.HttpConn {

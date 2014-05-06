@@ -40,6 +40,7 @@ import javax.microedition.midlet.MIDlet;
 import org.tantalum.PlatformAdapter;
 import org.tantalum.PlatformUtils;
 import org.tantalum.PlatformUtils.HttpConn;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.storage.FlashCache;
 import org.tantalum.storage.FlashDatabaseException;
 import org.tantalum.storage.ImageCacheView;
@@ -206,6 +207,11 @@ public final class JMEPlatformAdapter implements PlatformAdapter {
     public L getLog() {
         return log;
     }
+
+  public CryptoUtils getCryptoUtils() {
+    return JMECryptoUtils.getInstance();
+  }
+    
 
     public Object readImageFromJAR(final String jarPathAndFilename) throws IOException {
         final byte[] bytes = StringUtils.readBytesFromJAR(jarPathAndFilename);

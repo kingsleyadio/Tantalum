@@ -34,12 +34,11 @@ import java.util.Hashtable;
 import java.util.Vector;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.security.DigestException;
 import java.util.TimerTask;
 
 import org.tantalum.PlatformUtils;
 import org.tantalum.Task;
-import org.tantalum.util.CryptoUtils;
+import org.tantalum.security.CryptoException;
 import org.tantalum.util.L;
 import org.tantalum.util.LOR;
 import org.tantalum.util.RollingAverage;
@@ -1112,11 +1111,11 @@ public class HttpGetter extends Task {
      * @throws DigestException
      * @throws UnsupportedEncodingException
      */
-    protected String urlToKeyIncludingPostDataHash(final String url) throws DigestException, UnsupportedEncodingException {
+    protected String urlToKeyIncludingPostDataHash(final String url) throws CryptoException, UnsupportedEncodingException {
         if (this.postMessage == null) {
             throw new IllegalStateException("Attempt to get post-style crypto digest, but postData==null");
         }
-        final long digest = CryptoUtils.getInstance().toDigest(this.postMessage);
+        final long digest = PlatformUtils.getInstance().getCryptoUtils().toDigest(this.postMessage);
         final String digestAsHex = Long.toString(digest, 16);
 
         return url + '\n' + digestAsHex;

@@ -2,12 +2,15 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.rim.device.api.crypto;
+package org.tantalum.security;
 
 /**
  *
  * @author ADIKSONLINE
  */
-public class MD5Digest extends Digest {
-    
+public class CryptoException extends Exception {
+
+  public CryptoException(String s) {
+    super(s);
+  }
 }

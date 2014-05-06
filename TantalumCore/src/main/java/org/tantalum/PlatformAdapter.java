@@ -32,6 +32,7 @@ import java.util.Vector;
 import org.tantalum.storage.FlashCache;
 import org.tantalum.storage.FlashDatabaseException;
 import org.tantalum.storage.ImageCacheView;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.util.L;
 
 /**
@@ -91,6 +92,17 @@ public interface PlatformAdapter {
      * @return
      */
     L getLog();
+    
+    /**
+     * Get a platform-specific implementation of the cryptography class.
+     * 
+     * Note that this is made platform dependent since cryptography implementation 
+     * on some platforms were implemented independent of the default java.security 
+     * package.
+     * 
+     * @return 
+     */
+    CryptoUtils getCryptoUtils();
 
     /**
      * Provide a return the converts from common Internet compressed byte[]

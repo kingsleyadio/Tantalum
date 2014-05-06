@@ -73,7 +73,7 @@ public class TantalumBB {
      * @param reason - added to the log
      */
     public static void stop(final String reason){
-        PlatformUtils.getInstance().shutdown(true, reason);
+        PlatformUtils.getInstance().shutdown(reason);
     }
     
 }
