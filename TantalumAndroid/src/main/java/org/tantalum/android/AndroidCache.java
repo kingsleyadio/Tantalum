@@ -35,11 +35,12 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 import android.os.StatFs;
 import java.io.UnsupportedEncodingException;
-import java.security.DigestException;
+import java.util.Enumeration;
+import java.util.Vector;
+import org.tantalum.security.CryptoException;
 import org.tantalum.storage.FlashCache;
 import org.tantalum.storage.FlashDatabaseException;
 import org.tantalum.storage.FlashFullException;
-import org.tantalum.util.CryptoUtils;
 import org.tantalum.util.L;
 
 /**
@@ -129,18 +130,18 @@ public final class AndroidCache extends FlashCache {
 
                 if (startupTask != null) {
                     try {
-                        final long[] digests = getDigests();
+                        final Enumeration digests = getDigests();
 
-                        for (int i = 0; i < digests.length; i++) {
-                            final String key = getKey(digests[i]);
-
+                        while (digests.hasMoreElements()) {
+                          final String key = getKey((long) digests.nextElement());
+                          
                             if (key != null) {
                                 startupTask.execForEachKey(AndroidCache.this, key);
                             }
                         }
                     } catch (FlashDatabaseException ex) {
                         L.e("Can not furn startupTask on database init", startupTask.toString(), ex);
-                    } catch (DigestException ex) {
+                    } catch (CryptoException ex) {
                         L.e("Can not furn startupTask on database init", startupTask.toString(), ex);
                     }
                 }
@@ -158,7 +159,7 @@ public final class AndroidCache extends FlashCache {
      * @throws FlashDatabaseException
      */
     @Override
-    public byte[] get(final long digest) throws FlashDatabaseException {
+    public byte[] get(final long digest, boolean markAsRecentlyUsed) throws FlashDatabaseException {
         synchronized (MUTEX) {
             Cursor cursor = null;
 
@@ -320,9 +321,9 @@ public final class AndroidCache extends FlashCache {
      * @throws FlashDatabaseException
      */
     @Override
-    public long[] getDigests() throws FlashDatabaseException {
+    public Enumeration getDigests() {
         synchronized (MUTEX) {
-            long[] digests = null;
+            Vector digests = new Vector();
             Cursor cursor = null;
 
             try {
@@ -332,31 +333,30 @@ public final class AndroidCache extends FlashCache {
                 cursor = db.query(tableName, new String[]{COL_KEY}, "*",
                         null, null, null, null, null);
                 if (cursor != null && cursor.getCount() > 0) {
-                    digests = new long[cursor.getCount()];
                     cursor.moveToFirst();
-                    for (int i = 0; i < digests.length; i++) {
+                    for (int i = 0; i < cursor.getCount(); i++) {
                         if (i != 0) {
                             cursor.moveToNext();
                         }
                         final String s = new String(cursor.getBlob(0), "UTF-8");
-                        digests[i] = CryptoUtils.getInstance().toDigest(s);
+                        digests.add(AndroidCryptoUtils.getInstance().toDigest(s));
                     }
                 }
             } catch (UnsupportedEncodingException e) {
                 //#debug
                 L.e("Can not access database on getKeys()", "", e);
-                throw new FlashDatabaseException("Can not acccess database on getKeys() : " + e);
-            } catch (DigestException e) {
+                //throw new FlashDatabaseException("Can not acccess database on getKeys() : " + e);
+            } catch (CryptoException e) {
                 //#debug
                 L.e("Can not access database on getKeys()", "", e);
-                throw new FlashDatabaseException("Can not acccess database on getKeys() : " + e);
+                //throw new FlashDatabaseException("Can not acccess database on getKeys() : " + e);
             } finally {
                 if (cursor != null) {
                     cursor.close();
                 }
             }
 
-            return digests;
+            return digests.elements();
         }
     }
 
@@ -379,7 +379,7 @@ public final class AndroidCache extends FlashCache {
     public long getFreespace() {
         final StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
 
-        return (long) stat.getBlockSize() * (long) stat.getBlockCount();
+        return (long) stat.getBlockSize() * (long) stat.getAvailableBlocks();
     }
 
     @Override
@@ -393,4 +393,23 @@ public final class AndroidCache extends FlashCache {
             }
         }
     }
+
+  @Override
+  public void markLeastRecentlyUsed(Long digest) {
+    
+  }
+
+  @Override
+  public void maintainDatabase() {
+    
+  }
+
+  @Override
+  public long getSize() throws FlashDatabaseException {
+        final StatFs stat = new StatFs(Environment.getDataDirectory().getPath());
+        
+        final long freeSpace = stat.getBlockSize() * stat.getFreeBlocks();
+        long totalSize = (long) stat.getBlockSize() * (long) stat.getBlockCount();
+        return totalSize - freeSpace;
+  }
 }

@@ -41,6 +41,7 @@ import java.util.Vector;
 import org.tantalum.PlatformAdapter;
 import org.tantalum.PlatformUtils;
 import org.tantalum.PlatformUtils.HttpConn;
+import org.tantalum.security.CryptoUtils;
 import org.tantalum.storage.FlashCache;
 import org.tantalum.storage.FlashDatabaseException;
 import org.tantalum.storage.ImageCacheView;
@@ -53,6 +54,11 @@ import org.tantalum.util.StringUtils;
  * @author phou
  */
 public final class AndroidPlatformAdapter implements PlatformAdapter {
+
+  @Override
+  public CryptoUtils getCryptoUtils() {
+    return AndroidCryptoUtils.getInstance();
+  }
 
     private static class ImageCacheViewHolder {
         static ImageCacheView imageCacheView = new AndroidImageCacheView();
