@@ -3,6 +3,7 @@ package org.tantalum.blackberry;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import net.rim.device.api.system.Memory;
 
 import net.rim.device.api.system.PersistentObject;
 import net.rim.device.api.system.PersistentStore;
@@ -65,8 +66,7 @@ public class BBCache extends FlashCache {
 	}
 
 	public long getFreespace() throws FlashDatabaseException {
-		// TODO Auto-generated method stub
-		return 5000000;
+        return Memory.getPersistentStats().getFree();
 	}
 
 	public String getKey(long digest) throws FlashDatabaseException {
@@ -75,10 +75,7 @@ public class BBCache extends FlashCache {
 	}
 
 	public long getSize() throws FlashDatabaseException {
-		synchronized (mutex) {
-			Hashtable cache = (Hashtable) persistence.getContents();
-			return cache.size();
-		}
+        return Memory.getPersistentStats().getObjectSize();
 	}
 
 	public void maintainDatabase() {
