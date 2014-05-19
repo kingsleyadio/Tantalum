@@ -29,7 +29,7 @@ public class BBCache extends FlashCache {
 		persistence = PersistentStore.getPersistentObject(KEY);
 
 		synchronized (mutex) {
-			Hashtable cache = (Hashtable) persistence.getContents();
+			Object cache = persistence.getContents();
 			if (cache == null) {
 				cache = new Hashtable();
 				persistence.setContents(cache);
@@ -61,7 +61,7 @@ public class BBCache extends FlashCache {
 	public Enumeration getDigests() {
 		synchronized (mutex) {
 			Hashtable cache = (Hashtable) persistence.getContents();
-			return cache.elements();
+			return cache.keys();
 		}
 	}
 
